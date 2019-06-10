@@ -57,7 +57,8 @@ const Float_t screen_height_def = 900;
 
 TString pathRoot = "./";
 
-const Float_t Zoffset = 80;
+const Float_t Zoffset = 65; // for nylon scatter sim
+//const Float_t Zoffset = 80; // from Alex old version
 const Int_t nPoints = 100;
 // 500 points is used for the final best results, but it's rather slows down the program. Use 100 for good intermediate results
 //const Int_t nPoints = 500;
@@ -74,6 +75,21 @@ Float_t dY_shift_AM0 = 1.6;
 Float_t dX_shift_AM1 = -1.6;
 Float_t dY_shift_AM1 = -1.6;
 Double_t D, N;
+
+// To define position of AM0 when rotated.
+Float_t x_d=31.2;
+Float_t z_d=59.0;
+Double_t theta_d = TMath::ATan2(x_d,z_d);
+
+TH1F *x_local_am0 = new TH1F("x_local_am0","Local X coords, AM0",200,-10,10);
+TH1F *x_local_am1 = new TH1F("x_local_am1","Local X coords, AM1",200,-10,10);
+TH1F* y_local_am0 = new TH1F("y_local_am0","Local Y coords, AM0",200,-10,10);
+TH1F* y_local_am1 = new TH1F("y_local_am1","Local Y coords, AM1",200,-10,10);
+TH1F* z_local_am0 = new TH1F("z_local_am0","Local Z coords, AM0",200,-100,100);
+TH1F* z_local_am1 = new TH1F("z_local_am1","Local Z coords, AM1",200,-100,100);
+TH2F* x_y_local=new TH2F("x_y_local","x vs y local",200,-10,10,200,-10,10);
+TH2F* x_z_local=new TH2F("x_z_local","x vs z local",200,-10,10,200,-100,100);
+TH2F* y_z_local=new TH2F("y_z_local","y vs z local",200,-10,10,200,-100,100);
 
 TH2F *plane[2];
 TH2F *plane2[2];
@@ -99,8 +115,11 @@ TString num_str;
 
 Int_t    GetEntry(Long64_t entry);
 Long64_t LoadTree(Long64_t entry);
+Double_t GetLocalX(Float_t x_g, Float_t z_g);
+Double_t GetLocalZ(Float_t x_g, Float_t z_g);
 Int_t findAM(Float_t z);
 Int_t findPixelID(Int_t am, Float_t x, Float_t y);
+//Int_t findPixelID(Float_t x, Float_t y, Float_t z);
 Double_t sigmaTotal2_t_scaled(Double_t *, Double_t *);
 Bool_t getPixel2Dcoordinates(const Int_t, const Int_t, Int_t&, Int_t&);
 Float_t getPhiAngleDeg(const Float_t, const Float_t);
@@ -460,10 +479,24 @@ int main()
 		if (amID[1] == 1) plane2[amID[1]]->Fill(-X2_a,Y2_a,energy[amID[1]][0]);
 		if (amID[1] == 1) plane2[amID[1]]->Fill(-X2_b,Y2_b,energy[amID[1]][1]);
 
-		xvec[amID[0]][0] = X1_a;
-		xvec[amID[0]][1] = X1_b;
-		xvec[amID[1]][0] = X2_a;
-		xvec[amID[1]][1] = X2_b;
+// This is now redundant as both AMs are being modified
+//      xvec[amID[0]][0] = X1_a;
+//      xvec[amID[0]][1] = X1_b;
+//      xvec[amID[1]][0] = X2_a;
+//      xvec[amID[1]][1] = X2_b;
+      
+// AM 0 is rotated.
+      if (amID[0] == 0)
+      {
+         xvec[amID[0]][0] = GetLocalX(X1_a,Z1_a);
+         xvec[amID[0]][1] = GetLocalX(X1_b,Z1_b);
+      }
+      if (amID[1] == 0)
+      {
+         xvec[amID[1]][0] = GetLocalX(X2_a,Z2_a);
+         xvec[amID[1]][1] = GetLocalX(X2_b,Z2_b);
+      }
+// AM 1 is rotated 180 so just do -x value.
 		if (amID[0] == 1)
 		{
 			xvec[amID[0]][0] = -X1_a;
@@ -474,7 +507,7 @@ int main()
 			xvec[amID[1]][0] = -X2_a;
 			xvec[amID[1]][1] = -X2_b;			
 		}
-		xvec[0][0] += dX_shift_AM0;
+		xvec[0][0] += dX_shift_AM0; // what is this for?
 		xvec[0][1] += dX_shift_AM0;
 		xvec[1][0] += dX_shift_AM1;
 		xvec[1][1] += dX_shift_AM1;
@@ -496,6 +529,36 @@ int main()
 		zvec[amID[0]][1] = Z1_b;
 		zvec[amID[1]][0] = Z2_a;
 		zvec[amID[1]][1] = Z2_b;
+      if (amID[0] == 0)
+      {
+         zvec[amID[0]][0] = GetLocalZ(X1_a,Z1_a);
+         zvec[amID[0]][1] = GetLocalZ(X1_b,Z1_b);
+      }
+      if (amID[1] == 0)
+      {
+         zvec[amID[1]][0] = GetLocalZ(X2_a,Z2_a);
+         zvec[amID[1]][1] = GetLocalZ(X2_b,Z2_b);
+      }
+      
+      for(int im=0; im < nAMs; im++)
+      {
+         for(int hit=0; hit < nAMs; hit++)
+         {
+            if(amID[im]==0) {
+               x_local_am0->Fill(xvec[amID[im]][hit]);
+               y_local_am0->Fill(yvec[amID[im]][hit]);
+               z_local_am0->Fill(zvec[amID[im]][hit]);
+            } else {
+               x_local_am1->Fill(xvec[amID[im]][hit]);
+               y_local_am1->Fill(yvec[amID[im]][hit]);
+               z_local_am1->Fill(zvec[amID[im]][hit]);
+            }
+            
+            x_y_local->Fill(xvec[amID[im]][hit],yvec[amID[im]][hit]);
+            x_z_local->Fill(xvec[amID[im]][hit],zvec[amID[im]][hit]);
+            y_z_local->Fill(yvec[amID[im]][hit],zvec[amID[im]][hit]);
+         }
+      }
 				
 	    pixel[amID[0]][0] = findPixelID(amID[0],xvec[amID[0]][0],yvec[amID[0]][0]);
 	    pixel[amID[0]][1] = findPixelID(amID[0],xvec[amID[0]][1],yvec[amID[0]][1]);
@@ -748,14 +811,58 @@ int main()
 	dPhiAngleNorm_Ewin->Write();
 	dPhiAngle_Ewin->Write();
 	dPhiAngle1_Ewin->Write();
+   
+   x_local_am0->Write();
+   x_local_am1->Write();
+   y_local_am0->Write();
+   y_local_am1->Write();
+   z_local_am0->Write();
+   z_local_am1->Write();
+   
+   x_y_local->Write();
+   x_z_local->Write();
+   y_z_local->Write();
+ 
 	hfile2->Close();
 }
 
+Double_t GetLocalX(Float_t x_g, Float_t z_g)
+{
+   Double_t theta_l = TMath::ATan2(x_g,z_g) - theta_d;
+   Double_t r = TMath::Sqrt(x_g*x_g+z_g*z_g);
+
+   Double_t x_l = r*TMath::Sin(theta_l);
+   
+//   cout << "Global coords, x: " << x_g << " and z: " << z_g << " produce local x: " << x_l << endl;
+   
+   return x_l;
+}
+
+Double_t GetLocalZ(Float_t x_g, Float_t z_g)
+{
+   Double_t theta_l = TMath::ATan2(x_g,z_g) - theta_d;
+   Double_t r = TMath::Sqrt(x_g*x_g+z_g*z_g);
+
+   Double_t z_l = r*TMath::Cos(theta_l);
+   
+   return z_l;
+}
+
+//Int_t findAM(Float_t z)
+//{
+//   Int_t am = -1;
+//   if(z >= Zoffset) am = 0;
+//   else if(z <= -Zoffset) am = 1;
+//
+//   return am;
+//}
+
+// Think it should be sufficient to just check +ve/-ve to select AM
 Int_t findAM(Float_t z)
 {
    Int_t am = -1;
-   if(z >= Zoffset) am = 0;
-   else if(z <= -Zoffset) am = 1;
+   if(z > 0) am = 0;
+   else if(z < 0) am = 1;
    
    return am;
 }
@@ -765,7 +872,7 @@ Int_t findPixelID(Int_t am, Float_t x, Float_t y)
    Int_t pixelID=-1;
    Int_t row=-1, col=-1;
    
-   // AM 1 if rotated 180 degrees so invert x
+   // AM 1 is rotated 180 degrees so invert x
    if(am==1) x=-x;
    
    // added 100um to extremes
