@@ -69,7 +69,7 @@ TString pathRoot = "./";
 
 const Float_t Zoffset = 0; // set this to zero as offset now subtracted for each AM individually
 //const Float_t Zoffset = 80; // from Alex old version
-const Int_t nPoints = 100;
+const Int_t nPoints = 500;
 // 500 points is used for the final best results, but it's rather slows down the program. Use 100 for good intermediate results
 //const Int_t nPoints = 500;
 Float_t factor2ConvertAnodeTime2Distance[2] = {95,127};
@@ -78,7 +78,8 @@ const Int_t prntOutF = 200000;
 // Parameters to replicate experimental configuration
 Float_t triggerThresh = 50; // keV
 Bool_t errorFlags = 0;
-Float_t maxDistDZ = 4.7; // mm, radius
+//Float_t maxDistDZ = 4.7; // mm, radius. Alex's value
+Float_t maxDistDZ = 20; // mm, radius for no collimator
 Float_t fwhm[2] = {3.8,5.3}; //energy resolution of detectors (%)
 Float_t dX_shift_AM0 = 0;
 Float_t dY_shift_AM0 = 0;
@@ -144,9 +145,6 @@ Float_t getPhiAngleDeg(const Float_t, const Float_t);
 
 int main()
 {
-	cout << "Angle of second head: " << theta_d*TMath::RadToDeg() << " degrees" << endl
-		<< "AM0 offset: " << ZoffsetAM0 << " mm" << endl
-		<< "AM1 offset: " << ZoffsetAM1 << " mm" << endl;
 	
 	rand3 = new TRandom3();
 	rand3->SetSeed(0);
@@ -325,10 +323,29 @@ int main()
 	for (Int_t is = nev_str.Length(); is > 1; is--)
 		if ((is-nev_str.Length()+2)%4 == 0) nev_str.Insert(is-1,",",1);
 	cout << "nEvents2Analyse = " << nev_str << endl;
+
+	if(!errorFlags) cout << endl
+		<< "------------------------" << endl
+		<< "Error warnings inhibited" << endl
+		<< "------------------------" << endl;
+	
+	cout << endl << "Number of points used for charge sharing: " << nPoints << endl;
+	
+	cout << "AM0 x: 0mm" << endl
+		<< "AM0 z: " << ZoffsetAM0 << "mm" << endl
+		<< "AM1 x: " << x_d << "mm" << endl
+		<< "AM1 z: " << z_d << "mm" << endl
+		<< "AM1 theta: " << theta_d*TMath::RadToDeg() << " degrees" << endl
+		<< "AM1 r: " << ZoffsetAM1 << "mm" << endl;
+	
+	cout <<"maxDistDZ used for collimator emulation: " << maxDistDZ << "mm (radius)" << endl;
+	
+//	cout << "Angle of second head: " << theta_d*TMath::RadToDeg() << " degrees" << endl
+//	<< "AM0 offset: " << ZoffsetAM0 << " mm" << endl
+//	<< "AM1 offset: " << ZoffsetAM1 << " mm" << endl;
 	
 	cout << "Trigger threshold: " << triggerThresh << " keV" << endl;
 	cout << "FWHM for energy smearing: " << fwhm[0] << "% and " << fwhm[1] << "%" << endl;
-	if(!errorFlags) cout << endl << "Error warnings inhibited" << endl;
 	
 	dPhiAngle_Ewin = new TH1F("dPhiAngle_Ewin",Form("%s, #Delta#varphi within  %.0f keV < E < %.0f keV",spectrumName.Data(),Ewindow4PhiAnalyis_min,Ewindow4PhiAnalyis_max),nBins_dPhi,-180,180);
 	dPhiAngle_Ewin->GetXaxis()->SetTitleOffset(1.2);
