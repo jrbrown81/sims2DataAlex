@@ -115,7 +115,7 @@ TH2F *plane2[2];
 TRandom3 *rand3;
 TH2I *pixelPattern[2];
 TH1F *usedPixelsH[2];
-TString spectrumName = "Na-22, 1400V";
+TString spectrumName = "Simulation";
 TH1F *dPhiAngle_Ewin;
 TH1F *dPhiAngleNorm_Ewin;
 TH1F *dPhiAngle1_Ewin;
@@ -147,7 +147,7 @@ int main()
 {
 	
 	rand3 = new TRandom3();
-	rand3->SetSeed(0);
+	rand3->SetSeed(1234567);
 	//gStyle->SetOptStat(0);
 	TH1::AddDirectory(0);
 	gErrorIgnoreLevel = 1001;
@@ -370,7 +370,7 @@ int main()
 	Int_t eventCounter=0;
 	Int_t amID[2]={-1,-1};
 	Int_t pixel[2][2]={{-1,-1},{-1,-1}};
-	Int_t pixel2[2][2]={{-1,-1},{-1,-1}};
+//	Int_t pixel2[2][2]={{-1,-1},{-1,-1}};
 	Float_t energy[2][2]={{0,0},{0,0}};
 	Int_t pos[2][2]={{0,0},{0,0}};
 	//Int_t nTrigPixels[2]={0,0};
@@ -677,13 +677,13 @@ int main()
 		
 		for(int im = 0; im < nAMs; im++)
 		{
-			Double_t locZ = TMath::Abs(zvec[amID[im]][0]) - Zoffset;
+			Double_t locZ = TMath::Abs(zvec[amID[im]][0]) - Zoffset; // Zoffset now set to 0 as already subtracted from each AM individually in zvec
 			locZ = dd*1000 - locZ;
 			Double_t driftT = factor2ConvertAnodeTime2Distance[amID[im]]*locZ/1000; // in us
 			N = energy[amID[im]][0]*1000/Epair;
 			Double_t RR1 = sigTotal_t_scaled->Eval(driftT)/1000; // calculate charge cloud size based on drift time
 			//cout << "driftT = " << driftT << ", RR1 = " << RR1 << ", E = " << energy[amID[im]][0] << ", locZ = " << locZ << ", amID = " << amID[im] << endl;
-			locZ = TMath::Abs(zvec[amID[im]][1]) - Zoffset;
+			locZ = TMath::Abs(zvec[amID[im]][1]) - Zoffset; // Zoffset now set to 0 as already subtracted from each AM individually in zvec
 			locZ = dd*1000 - locZ;
 			driftT = factor2ConvertAnodeTime2Distance[amID[im]]*locZ/1000; // in us
 			N = energy[amID[im]][1]*1000/Epair;
@@ -782,7 +782,7 @@ int main()
 			{
 				for (Int_t jj = 1; jj <= nPixXY; jj++)
 				{
-					if (plane[amID[im]]->GetBinContent(ii,jj) < 5) {
+					if (plane[amID[im]]->GetBinContent(ii,jj) < 5) { // Check if pixel has >5keV, otherwise continue to next pixel
 //						cout << "ERROR! plane<5" << endl;
 //						planeErrCount++;
 						continue;
@@ -1008,7 +1008,7 @@ Int_t findPixelID(Int_t am, Float_t x, Float_t y)
 	Int_t row=-1, col=-1;
 	
 	// AM 1 is rotated 180 degrees so invert x
-	if(am==1) x=-x;
+//	if(am==1) x=-x; // Think this is now accounted for in calculation of local coords. // Shouldn't make any difference as pixel number is calculated elsewhere by Alex
 	
 	// added 100um to extremes
 	Float_t pixEdges[12]={-4.5,-3.6,-2.8,-2.0,-1.2,-0.4,0.4,1.2,2.0,2.8,3.6,4.5};
